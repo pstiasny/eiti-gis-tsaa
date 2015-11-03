@@ -30,3 +30,7 @@ def test_swapping_late_edges(route):
 
 def test_swapping_early_edges(route):
     assert route.swap_edges(0, 2).nodes == [2, 1, 0, 3, 4]
+
+
+def test_getting_route_length(route):
+    assert route.length() == 8
