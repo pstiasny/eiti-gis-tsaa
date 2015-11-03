@@ -5,37 +5,50 @@ from math import exp, log
 from random import randrange, random
 
 
-def load(file_):
-    nodes = file_.readline().strip().split(',')
-    adjacency = [[float(s.strip() or '0') for s in l.split(',')] for l in file_]
-    return nodes, adjacency
+class Graph:
+    def __init__(self, node_names, adjacency):
+        self.nodes = node_names
+        self.adjacency = adjacency
+
+    def make_initial_route(self):
+        return Route(self, range(len(self.adjacency)))
+
+    @classmethod
+    def load(cls, file_):
+        nodes = file_.readline().strip().split(',')
+        adjacency = [[float(s.strip() or '0') for s in l.split(',')] for l in file_]
+        return cls(nodes, adjacency)
 
 
-def make_initial_path(adjacency):
-    return list(range(len(adjacency)))
+class Route:
+    def __init__(self, graph, nodes):
+        self.nodes = list(nodes)
+        self.graph = graph
 
+    def __str__(self):
+        node_names = self.graph.nodes
+        return ', '.join([node_names[i] for i in self.nodes])
 
-def print_path(nodes, path):
-    print(', '.join([nodes[i] for i in path]))
+    def length(self):
+        adjacency = self.graph.adjacency
 
+        # circular shift of the route list by one item left
+        shifted = chain(islice(self.nodes, 1, None), [self.nodes[0]])
+        edges = zip(self.nodes, shifted)
+        edge_lengths = (adjacency[i][j] for i, j in edges)
+        return sum(edge_lengths)
 
-def path_length(adjacency, path):
-    # circular shift of the path list by one item left
-    shifted = chain(islice(path, 1, None), [path[0]])
-    edges = zip(path, shifted)
-    edge_lengths = (adjacency[i][j] for i, j in edges)
-    return sum(edge_lengths)
+    def swap_edges(self, i, k):
+        "Performs a 2-opt swap"
+        new_nodes = self.nodes[:i] + \
+                    list(reversed(self.nodes[i:k+1])) + \
+                    self.nodes[k+1:]
+        return Route(self.graph, new_nodes)
 
-
-def swap_edges(path, i, k):
-    "Performs a 2-opt swap"
-    return path[:i] + list(reversed(path[i:k+1])) + path[k+1:]
-
-
-def swap_random_edges(path):
-    i = randrange(0, len(path))
-    j = randrange(0, len(path))
-    return swap_edges(path, min(i, j), max(i, j))
+    def swap_random_edges(self):
+        i = randrange(0, len(self.nodes))
+        j = randrange(0, len(self.nodes))
+        return self.swap_edges(min(i, j), max(i, j))
 
 
 def annealing_temp(n):
@@ -46,29 +59,33 @@ def annealing_accept_probability(current, candidate, n):
     return exp((current - candidate) / annealing_temp(n))
 
 
-if __name__ == '__main__':
-    nodes, adjacency = load(open('odleglosci.csv'))
-    path = make_initial_path(adjacency)
-
-    cur_path_length = path_length(adjacency, path)
+def find_route(graph):
+    route = graph.make_initial_route()
+    cur_route_length = route.length()
 
     for n in range(1, 500000):
-        path_candidate = swap_random_edges(path)
-        path_candidate_length = path_length(adjacency, path_candidate)
+        route_candidate = route.swap_random_edges()
+        route_candidate_length = route_candidate.length()
 
         accept = False
-        if path_candidate_length < cur_path_length:
+        if route_candidate_length < cur_route_length:
             # if the new length is shorter, accept unconditionally
             accept = True
         else:
-            # if the new path is longer, it can still be accepted according
+            # if the new route is longer, it can still be accepted according
             # to the simulated annealing method
-            accept_probability = annealing_accept_probability(cur_path_length, path_candidate_length, n)
+            accept_probability = annealing_accept_probability(cur_route_length, route_candidate_length, n)
             accept = random() < accept_probability
 
         if accept:
-            path = path_candidate
-            cur_path_length = path_candidate_length
+            route = route_candidate
+            cur_route_length = route_candidate_length
 
-    print_path(nodes, path)
-    print(cur_path_length)
+    return route
+
+
+if __name__ == '__main__':
+    graph = Graph.load(open('odleglosci.csv'))
+    route = find_route(graph)
+    print(route)
+    print(route.length())
