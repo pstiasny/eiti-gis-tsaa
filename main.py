@@ -7,23 +7,23 @@ from random import randrange, random
 
 def load(file_):
     nodes = file_.readline().strip().split(',')
-    incidence = [[float(s.strip() or '0') for s in l.split(',')] for l in file_]
-    return nodes, incidence
+    adjacency = [[float(s.strip() or '0') for s in l.split(',')] for l in file_]
+    return nodes, adjacency
 
 
-def make_initial_path(incidence):
-    return list(range(len(incidence)))
+def make_initial_path(adjacency):
+    return list(range(len(adjacency)))
 
 
 def print_path(nodes, path):
     print(', '.join([nodes[i] for i in path]))
 
 
-def path_length(incidence, path):
+def path_length(adjacency, path):
     # circular shift of the path list by one item left
     shifted = chain(islice(path, 1, None), [path[0]])
     edges = zip(path, shifted)
-    edge_lengths = (incidence[i][j] for i, j in edges)
+    edge_lengths = (adjacency[i][j] for i, j in edges)
     return sum(edge_lengths)
 
 
@@ -47,14 +47,14 @@ def annealing_accept_probability(current, candidate, n):
 
 
 if __name__ == '__main__':
-    nodes, incidence = load(open('odleglosci.csv'))
-    path = make_initial_path(incidence)
+    nodes, adjacency = load(open('odleglosci.csv'))
+    path = make_initial_path(adjacency)
 
-    cur_path_length = path_length(incidence, path)
+    cur_path_length = path_length(adjacency, path)
 
     for n in range(1, 500000):
         path_candidate = swap_random_edges(path)
-        path_candidate_length = path_length(incidence, path_candidate)
+        path_candidate_length = path_length(adjacency, path_candidate)
 
         accept = False
         if path_candidate_length < cur_path_length:
