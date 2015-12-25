@@ -77,6 +77,7 @@ def annealing_accept_probability(current, candidate, temp):
 def find_route(logger, temps, graph):
     route = graph.make_initial_route()
     cur_route_length = route.length()
+    last_improvement = 0
 
     for n, temp in enumerate(temps):
         route_candidate = route.swap_random_edges()
@@ -86,6 +87,7 @@ def find_route(logger, temps, graph):
         if route_candidate_length < cur_route_length:
             # if the new length is shorter, accept unconditionally
             accept = True
+            last_improvement = n
         else:
             # if the new route is longer, it can still be accepted according
             # to the simulated annealing method
@@ -98,7 +100,7 @@ def find_route(logger, temps, graph):
             cur_route_length = route_candidate_length
 
         logger.log_iteration(n, temp, cur_route_length)
-        if n > 500000:
+        if n >= 500000 or n - last_improvement >= 2000:
             return route
 
     return route
