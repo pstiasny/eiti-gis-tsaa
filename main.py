@@ -51,19 +51,26 @@ class Route:
         return self.swap_edges(min(i, j), max(i, j))
 
 
-def annealing_temp(n):
-    return 1 / log(n+2)
+def temperatures(t0, a):
+    t = t0
+    while True:
+        yield t
+        t *= a
+        if t <= 0: t = 0
 
 
-def annealing_accept_probability(current, candidate, n):
-    return exp((current - candidate) / annealing_temp(n))
+def annealing_accept_probability(current, candidate, temp):
+    if temp > 0:
+        return exp((current - candidate) / temp)
+    else:
+        return 0
 
 
-def find_route(graph):
+def find_route(temps, graph):
     route = graph.make_initial_route()
     cur_route_length = route.length()
 
-    for n in range(1, 500000):
+    for n, temp in enumerate(temps):
         route_candidate = route.swap_random_edges()
         route_candidate_length = route_candidate.length()
 
@@ -74,18 +81,22 @@ def find_route(graph):
         else:
             # if the new route is longer, it can still be accepted according
             # to the simulated annealing method
-            accept_probability = annealing_accept_probability(cur_route_length, route_candidate_length, n)
+            accept_probability = annealing_accept_probability(
+                cur_route_length, route_candidate_length, temp)
             accept = random() < accept_probability
 
         if accept:
             route = route_candidate
             cur_route_length = route_candidate_length
 
+        if n > 500000:
+            return route
+
     return route
 
 
 if __name__ == '__main__':
     graph = Graph.load(open('odleglosci.csv'))
-    route = find_route(graph)
+    route = find_route(temperatures(1, 0.9999), graph)
     print(route)
     print(route.length())
