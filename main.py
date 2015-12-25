@@ -51,6 +51,14 @@ class Route:
         return self.swap_edges(min(i, j), max(i, j))
 
 
+class FileAnnealingLogger:
+    def __init__(self, file):
+        self.file = file
+
+    def log_iteration(self, iteration, temperature, length):
+        self.file.write('{} {} {}\n'.format(iteration, temperature, length))
+
+
 def temperatures(t0, a):
     t = t0
     while True:
@@ -66,7 +74,7 @@ def annealing_accept_probability(current, candidate, temp):
         return 0
 
 
-def find_route(temps, graph):
+def find_route(logger, temps, graph):
     route = graph.make_initial_route()
     cur_route_length = route.length()
 
@@ -89,6 +97,7 @@ def find_route(temps, graph):
             route = route_candidate
             cur_route_length = route_candidate_length
 
+        logger.log_iteration(n, temp, cur_route_length)
         if n > 500000:
             return route
 
@@ -97,6 +106,9 @@ def find_route(temps, graph):
 
 if __name__ == '__main__':
     graph = Graph.load(open('odleglosci.csv'))
-    route = find_route(temperatures(1, 0.9999), graph)
+    route = find_route(
+        FileAnnealingLogger(open('aalog', 'w')),
+        temperatures(10000, 0.999985),
+        graph)
     print(route)
     print(route.length())
