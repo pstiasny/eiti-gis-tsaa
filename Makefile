@@ -4,7 +4,7 @@ plots.png: aalog plots.gnuplot
 	gnuplot plots.gnuplot
 
 aalog: main.py
-	pypy3 main.py -l aalog odleglosci.csv
+	./main.py -l aalog odleglosci.csv
 
 stats: make_stats.sh main.py
 	bash make_stats.sh
