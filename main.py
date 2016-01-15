@@ -107,10 +107,11 @@ def find_route(logger, temps, graph):
 
 
 if __name__ == '__main__':
+    import sys
     graph = Graph.load(open('odleglosci.csv'))
     route = find_route(
         FileAnnealingLogger(open('aalog', 'w')),
-        temperatures(10000, 0.999985),
+        temperatures(int(sys.argv[1]), 0.999985),
         graph)
     print(route)
     print(route.length())
