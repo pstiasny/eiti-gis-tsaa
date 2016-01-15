@@ -51,12 +51,24 @@ class Route:
         return self.swap_edges(min(i, j), max(i, j))
 
 
+class NullAnnealingLogger:
+    def log_iteration(self, iteration, temperature, length):
+        pass
+
+
 class FileAnnealingLogger:
     def __init__(self, file):
         self.file = file
 
     def log_iteration(self, iteration, temperature, length):
         self.file.write('{} {} {}\n'.format(iteration, temperature, length))
+
+
+class AnnealingResult:
+    def __init__(self, route, length, iterations):
+        self.route = route
+        self.length = length
+        self.iterations = iterations
 
 
 def temperatures(t0, a):
@@ -101,17 +113,30 @@ def find_route(logger, temps, graph):
 
         logger.log_iteration(n, temp, cur_route_length)
         if n >= 500000 or n - last_improvement >= 2000:
-            return route
+            return AnnealingResult(route, cur_route_length, n)
 
-    return route
+    return AnnealingResult(route, cur_route_length, n)
 
 
 if __name__ == '__main__':
-    import sys
-    graph = Graph.load(open('odleglosci.csv'))
-    route = find_route(
-        FileAnnealingLogger(open('aalog', 'w')),
-        temperatures(int(sys.argv[1]), 0.999985),
+    import argparse
+
+    parser = argparse.ArgumentParser(description='Wyszukiwanie najkrótszego cyklu w problemie komiwojażera')
+    parser.add_argument('graphfile', type=str, help='plik CSV z danymi grafu')
+    parser.add_argument('-t', dest="starttemp", type=int, default=10000, help='temperatura początkowa')
+    parser.add_argument('-d', dest="tempdrop", type=float, default=0.999985, help='współczynnik spadku temperatury')
+    parser.add_argument('-s', dest='stats', action='store_true', help='wyświetl tylko skrócone statystyki')
+    parser.add_argument('-l', dest="logfile", type=str, help='logowanie do pliku')
+    args = parser.parse_args()
+
+    graph = Graph.load(open(args.graphfile))
+    result = find_route(
+        FileAnnealingLogger(open(args.logfile, 'w')) if args.logfile else NullAnnealingLogger(),
+        temperatures(args.starttemp, args.tempdrop),
         graph)
-    print(route)
-    print(route.length())
+
+    if args.stats:
+        print(args.starttemp, result.length, result.iterations)
+    else:
+        print(result.route)
+        print(result.length)
